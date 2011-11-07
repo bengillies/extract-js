@@ -112,8 +112,8 @@ var extract = (function() {
 		typeList = [];
 	}
 
-	/* from: turn a list of function arguments into a predictable object
-	 *
+	/*
+	 * from: turn a list of function arguments into a predictable object
 	 */
 	function from(args) {
 		var result = {},
