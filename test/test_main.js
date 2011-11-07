@@ -1,4 +1,4 @@
-module('getargs', {});
+module('extract/from', {});
 
 test('Default Options return args in order', function() {
 	var args = extract({name: 'foo'}, {name: 'bar'}).from(['arg1', 'arg2']);
