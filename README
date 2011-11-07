@@ -1,1 +1,1 @@
-A library to parse arguments from functions based on their type.
+A small library to extract well defined objects from arbitrary function arguments
