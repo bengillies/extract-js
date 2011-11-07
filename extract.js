@@ -3,7 +3,7 @@
  *
  */
 
-var targo = (function() {
+var extract = (function() {
 
 	var typeList = [];
 
@@ -74,38 +74,50 @@ var targo = (function() {
 			newType.prototype = _extend(new Type('default'), this);
 
 			var extension = new Type(name, obj);
-			return _extend(new newType, extension);
+			return _extend(new newType(), extension);
 		}
 	});
 
 	// define a default type (name is mandatory, so not included here)
 	var defaultType = new Type('default');
 
-	/* getargs: turn a list of function arguments into a predictable object
+	// add a new type to the type list
+	function addType() {
+		var args = extract(
+			{ name: 'name', test: function(o) { return typeof o === 'string'; } },
+			{ name: 'type', parse: function(o) {
+				return (o instanceof Type) ? o : new Type(this.name, o);
+			} }
+		).from(arguments);
+
+		typeList.push(args.type);
+	}
+
+	function getType(name) {
+		var result = {};
+		forEach.call(typeList, function(type) {
+			if (type.name === name) {
+				result = type;
+			}
+		});
+
+		return result;
+	}
+
+	function listTypes() {
+		return _extend([], typeList);
+	}
+
+	function clearTypes() {
+		typeList = [];
+	}
+
+	/* from: turn a list of function arguments into a predictable object
 	 *
-	 * types can be, e.g.:
-	 * [
-	 *     { name: 'tiddler', parse: function(t) { return store.get(t); }, default: null },
-	 *     { name: 'callback', pos: 0, test: function(f) { return typeof f === 'function'; } },
-	 *     { name: 'sub', test: function(s) { return s instanceof Sub; } },
-	 *     { name: 'msg', pos: 1, test: function(s) { return typeof s === 'string'; } },
-	 *     { name: 'renderFlag', pos: 2, parse: function(r) { return (r) ? true : false; } },
-	 *     { name: 'rest', list: true, test: function(a) { return typeof a === 'number'; } }
-	 * ]
-	 *
-	 * which would mean:
-	 * anything in position 0, is a tiddler and should be passed to the parse function
-	 * before being returned. Both tiddler and callback are interchangeable, with the
-	 * callback test function being used to distinguish between them. If callback is
-	 * found, it is returned directly. sub may appear anywhere, with the test dictating
-	 * whether it is passed in to args. msg is optional though must appear in position
-	 * 1 (relative to other positioned elements). If the test fails, the element in
-	 * position 2 will take it's place. renderFlag is the last element, and always
-	 * returns a boolean. list: true signifies anything else (matching an optional
-	 * test) will be put into rest as an array. Anything else will be ignored.
 	 */
-	function getargs(types, args) {
+	function from(args) {
 		var result = {},
+			types = this.types || [],
 			set = function(type, value) {
 				if (type.list) {
 					result[type.name] = result[type.name] || [];
@@ -115,7 +127,7 @@ var targo = (function() {
 				}
 			};
 
-		args = Array.prototype.slice.call(args);
+		args = Array.prototype.slice.call(args); // args is likely arguments so not a proper array
 
 		forEach.call(types, function(obj, pos) {
 			var type = (typeof obj === 'string') ? getType(obj) : new Type(obj),
@@ -146,44 +158,37 @@ var targo = (function() {
 		return result;
 	}
 
-	// add a new type to the type list
-	function addType() {
-		var args = getargs([
-			{ name: 'name', test: function(o) { return typeof o === 'string'; } },
-			{ name: 'type', parse: function(o) {
-				return (o instanceof Type) ? o : new Type(this.name, o);
-			} }
-		], arguments);
-
-		typeList.push(args.type);
+	 /*
+	  * Pass in some types that describe objects you would like returned.
+	  * You then get a "from" function that you can pass an array into to extract
+	  * those objects from.
+	  *
+	  * e.g.:
+	  *
+	  * var args = extract(
+	  *     { name: 'tiddler', parse: function(t) { return store.get(t); }, default: null },
+	  *     { name: 'callback', pos: 0, test: function(f) { return typeof f === 'function'; } },
+	  *     { name: 'sub', test: function(s) { return s instanceof Sub; } },
+	  *     { name: 'msg', pos: 1, test: function(s) { return typeof s === 'string'; } },
+	  *     { name: 'renderFlag', pos: 2, parse: function(r) { return (r) ? true : false; } },
+	  *     { name: 'rest', list: true, test: function(a) { return typeof a === 'number'; } }
+	  * ).from(arguments);
+	  *
+	  */
+	function extract() {
+		var types = Array.prototype.slice.call(arguments);
+		return {
+			types: types,
+			from: from
+		};
 	}
 
-	function getType(name) {
-		var result = {};
-		forEach.call(typeList, function(type) {
-			if (type.name === name) {
-				result = type;
-			}
-		});
-
-		return result;
-	}
-
-	function listTypes() {
-		return _extend([], typeList);
-	}
-
-	function clearTypes() {
-		typeList = [];
-	}
-
-	return {
-		getargs: getargs,
+	return _extend(extract, {
 		Type: Type,
 		defaultType: defaultType,
 		addType: addType,
 		getType: getType,
 		listTypes: listTypes,
 		clearTypes: clearTypes
-	};
+	});
 }());
