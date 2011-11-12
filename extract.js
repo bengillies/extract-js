@@ -86,7 +86,7 @@ var extract = (function() {
 		var args = extract(
 			{ name: 'name', test: function(o) { return typeof o === 'string'; } },
 			{ name: 'type', parse: function(o) {
-				return (o instanceof Type) ? o : new Type(this.name, o);
+				return (o instanceof Type) ? o : new Type(this.name || o.name, o);
 			} }
 		).from(arguments);
 
